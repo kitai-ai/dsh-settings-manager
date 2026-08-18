@@ -2,6 +2,16 @@
 
 DeepSeek Harness 社区插件：给 Web 设置页加 **MCP 服务器** 和 **技能** 两个可视化管理分区。不需要改 YAML、不需要手动放文件——全部在设置页里点按完成，保存立即生效。
 
+仓库：<https://github.com/kitai-ai/dsh-settings-manager>
+
+## 安装
+
+```sh
+dsh plugin --profile web add github:kitai-ai/dsh-settings-manager
+```
+
+重启 `dsh web` 后，设置页会出现 **MCP 服务器** 和 **技能** 两个分区。构建产物（`lib/` 与 `client/client.js`）已提交，安装无需编译。
+
 ## 功能
 
 **MCP 服务器（设置 → MCP 服务器）**
