@@ -1,0 +1,6 @@
+# dsh-settings-manager bundle patch: mounts the manager host plugin into a
+# profile's layer stack. The browser half is served automatically because the
+# package declares `dsh.client` (see package.json).
+- insert:
+    - id: dsh-settings-manager
+      name: 'dsh-settings-manager'
