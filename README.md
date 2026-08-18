@@ -20,6 +20,7 @@ dsh plugin --profile web add github:kitai-ai/dsh-settings-manager
 - 支持环境变量、请求头、超时、启动失败策略等字段
 - 保存立即生效：宿主端在运行时动态挂载/卸载 `@deepseek-ai/dsh-mcp-client` 实例，工具以 `mcp__<服务器名>__<工具名>` 出现在对话中，无需重启、无需改 `cordis.patch.yml`
 - 实时连接状态（连接中 / 已连接 / 未连接 / 错误）与工具数量，错误时展示根因（cause 链）
+- 查看每台服务器当前暴露的工具列表（工具名 / 描述 / 参数，`*` 标记必填参数）
 
 **技能（设置 → 技能）**
 

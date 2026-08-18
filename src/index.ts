@@ -10,6 +10,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createMcpManager } from './mcp.js'
+import type { RegisteredToolSchema } from './mcp.js'
 import { deleteSkill, getSkillBody, listSkills, upsertSkill } from './skills.js'
 import type { UpsertSkillInput } from './skills.js'
 import { queryParam, readJsonBody, sendJson, trustedRequest } from './util.js'
@@ -29,7 +30,7 @@ interface WebServer {
 }
 
 interface ToolsLike {
-  schemas(): { name: string }[]
+  schemas(): RegisteredToolSchema[]
 }
 
 /** The host context this plugin needs. */
@@ -99,6 +100,25 @@ export function apply(ctx: HostContext): void {
           return
         }
         sendJson(res, 200, { servers: result.servers })
+      },
+    }),
+
+    ctx.webServer.register({
+      kind: 'exact',
+      path: '/dsh-settings-manager/mcp/tools',
+      handler: (req, res) => {
+        if (!method(req, res, ['GET'])) return
+        const serverName = queryParam(req.url, 'serverName')
+        if (serverName === undefined || serverName === '') {
+          sendJson(res, 400, { error: 'missing serverName query parameter' })
+          return
+        }
+        const result = mcp.listTools(serverName)
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.error })
+          return
+        }
+        sendJson(res, 200, { tools: result.value })
       },
     }),
 

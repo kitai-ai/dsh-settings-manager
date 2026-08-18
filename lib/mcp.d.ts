@@ -15,6 +15,12 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { Config as McpClientConfig } from '@deepseek-ai/dsh-mcp-client';
 /** A normalized, persisted MCP server configuration (the mcp-client Config). */
 export type McpServerConfig = McpClientConfig;
+/** One model-facing tool schema the shared tool registry projects. */
+export interface RegisteredToolSchema {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+}
 /** Live connection state for one server, derived from the tool registry. */
 export interface McpServerState {
     status: 'starting' | 'connected' | 'offline' | 'error';
@@ -34,12 +40,24 @@ export type UpsertResult = {
     ok: false;
     error: string;
 };
+/** One tool a server exposes, as the browser tool list renders it. */
+export interface McpToolSummary {
+    /** Tool name without the `mcp__<serverName>__` prefix. */
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+}
+export type ToolsResult = {
+    ok: true;
+    value: McpToolSummary[];
+} | {
+    ok: false;
+    error: string;
+};
 /** The host context this manager needs: the tool registry's schema view. */
 type ManagerContext = Context & {
     tools: {
-        schemas(): {
-            name: string;
-        }[];
+        schemas(): RegisteredToolSchema[];
     };
 };
 /**
@@ -53,6 +71,7 @@ export interface McpManager {
     list(): McpServerRecord[];
     upsert(input: unknown): UpsertResult;
     remove(serverName: string): UpsertResult;
+    listTools(serverName: string): ToolsResult;
     dispose(): void;
 }
 /**

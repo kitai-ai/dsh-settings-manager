@@ -39,6 +39,14 @@ export interface SkillBody {
   body: string
 }
 
+/** One tool a server exposes, as rendered in the tool list. */
+export interface McpToolRecord {
+  /** Tool name without the `mcp__<serverName>__` prefix. */
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
 /**
  * Call one manager API route and parse its JSON body. Throws with the
  * server-provided message when the response is not ok.
@@ -72,6 +80,10 @@ export function upsertMcpServer(config: Record<string, unknown>): Promise<{ serv
 
 export function deleteMcpServer(serverName: string): Promise<{ servers: McpServerRecord[] }> {
   return api(`/dsh-settings-manager/mcp/delete?serverName=${encodeURIComponent(serverName)}`, { method: 'DELETE' })
+}
+
+export function listMcpServerTools(serverName: string): Promise<{ tools: McpToolRecord[] }> {
+  return api(`/dsh-settings-manager/mcp/tools?serverName=${encodeURIComponent(serverName)}`)
 }
 
 export function listSkills(): Promise<{ roots: SkillRoot[]; skills: SkillEntry[] }> {

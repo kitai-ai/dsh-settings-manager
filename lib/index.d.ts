@@ -8,6 +8,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { RegisteredToolSchema } from './mcp.js';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "dsh-settings-manager";
 /** Services required by this plugin. */
@@ -20,9 +21,7 @@ interface WebServer {
     }): () => void;
 }
 interface ToolsLike {
-    schemas(): {
-        name: string;
-    }[];
+    schemas(): RegisteredToolSchema[];
 }
 /** The host context this plugin needs. */
 export type HostContext = Context & {

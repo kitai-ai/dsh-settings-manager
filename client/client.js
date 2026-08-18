@@ -41,6 +41,9 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 		function deleteMcpServer(serverName) {
 			return api(`/dsh-settings-manager/mcp/delete?serverName=${encodeURIComponent(serverName)}`, { method: "DELETE" });
 		}
+		function listMcpServerTools(serverName) {
+			return api(`/dsh-settings-manager/mcp/tools?serverName=${encodeURIComponent(serverName)}`);
+		}
 		function listSkills() {
 			return api("/dsh-settings-manager/skills");
 		}
@@ -413,6 +416,107 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 				]
 			});
 		}
+		/** Render a tool's JSON-schema parameters as a compact `name, other*` line (`*` = required). */
+		function toolParams(parameters) {
+			const props = parameters.properties;
+			if (props === void 0) return void 0;
+			const names = Object.keys(props);
+			if (names.length === 0) return void 0;
+			const requiredRaw = parameters.required;
+			const required = new Set(Array.isArray(requiredRaw) ? requiredRaw.filter((item) => typeof item === "string") : []);
+			return names.map((name) => required.has(name) ? `${name}*` : name).join(", ");
+		}
+		/** The tool list of one server: fetched on open, rendered as name/description/params rows. */
+		function McpToolList({ t, server, onClose }) {
+			const [tools, setTools] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let cancelled = false;
+				listMcpServerTools(server.serverName).then((data) => {
+					if (!cancelled) setTools(data.tools);
+				}).catch((e) => {
+					if (!cancelled) setError(String(e));
+				});
+				return () => {
+					cancelled = true;
+				};
+			}, [server.serverName]);
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: s$1.editor,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						gap: 8
+					},
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							fontWeight: 600,
+							fontSize: 14
+						},
+						children: server.serverName
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+						style: s$1.button,
+						onClick: onClose,
+						children: t("close")
+					})]
+				}), error !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					style: s$1.error,
+					children: error
+				}) : tools === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					style: s$1.empty,
+					children: "…"
+				}) : tools.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					style: s$1.empty,
+					children: t("noTools")
+				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					style: {
+						display: "flex",
+						flexDirection: "column"
+					},
+					children: tools.map((tool) => {
+						const params = toolParams(tool.parameters);
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								padding: "8px 0",
+								borderBottom: "1px solid rgba(128,128,128,0.25)"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: {
+										fontWeight: 600,
+										fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+										fontSize: 13
+									},
+									children: tool.name
+								}),
+								tool.description !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: {
+										fontSize: 12,
+										opacity: .75,
+										marginTop: 2
+									},
+									children: tool.description
+								}),
+								params !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									style: {
+										fontSize: 12,
+										opacity: .6,
+										marginTop: 2
+									},
+									children: [
+										t("params"),
+										": ",
+										params
+									]
+								})
+							]
+						}, tool.name);
+					})
+				})]
+			});
+		}
 		function statusLabel(t, status) {
 			switch (status) {
 				case "connected": return t("connected");
@@ -425,6 +529,7 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 			const [servers, setServers] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
 			const [editing, setEditing] = (0, react.useState)(null);
+			const [viewingTools, setViewingTools] = (0, react.useState)(null);
 			const refresh = (0, react.useCallback)(async () => {
 				try {
 					const data = await listMcpServers();
@@ -466,6 +571,11 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 						},
 						onCancel: () => setEditing(null)
 					}),
+					viewingTools !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(McpToolList, {
+						t,
+						server: viewingTools,
+						onClose: () => setViewingTools(null)
+					}),
 					servers === null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						style: s$1.empty,
 						children: "…"
@@ -497,6 +607,11 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 									statusLabel(t, server.status),
 									server.toolCount > 0 ? ` · ${server.toolCount}${t("toolsCount")}` : ""
 								]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								style: s$1.button,
+								onClick: () => setViewingTools(server),
+								children: t("viewTools")
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 								style: s$1.button,
@@ -940,8 +1055,12 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 				failOnStartup: "启动连接失败时报错（failOnStartupError）",
 				save: "保存",
 				cancel: "取消",
+				close: "关闭",
 				delete: "删除",
 				edit: "编辑",
+				viewTools: "查看工具",
+				noTools: "该服务器暂无可用工具",
+				params: "参数",
 				confirmRemove: "确认删除该服务器？工具将立即从对话中移除。",
 				confirmRemoveSkill: "确认删除该技能？",
 				connected: "已连接",
@@ -991,8 +1110,12 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 				failOnStartup: "Fail on startup connection error",
 				save: "Save",
 				cancel: "Cancel",
+				close: "Close",
 				delete: "Delete",
 				edit: "Edit",
+				viewTools: "View tools",
+				noTools: "No tools available from this server",
+				params: "Params",
 				confirmRemove: "Remove this server? Its tools disappear from conversations immediately.",
 				confirmRemoveSkill: "Delete this skill?",
 				connected: "Connected",

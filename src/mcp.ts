@@ -25,6 +25,13 @@ const SERVER_NAME_PATTERN = /^[A-Za-z0-9_-]{1,32}$/
 /** A normalized, persisted MCP server configuration (the mcp-client Config). */
 export type McpServerConfig = McpClientConfig
 
+/** One model-facing tool schema the shared tool registry projects. */
+export interface RegisteredToolSchema {
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
 /** Live connection state for one server, derived from the tool registry. */
 export interface McpServerState {
   status: 'starting' | 'connected' | 'offline' | 'error'
@@ -48,8 +55,18 @@ interface LiveServer {
 
 export type UpsertResult = { ok: true; servers: McpServerRecord[] } | { ok: false; error: string }
 
+/** One tool a server exposes, as the browser tool list renders it. */
+export interface McpToolSummary {
+  /** Tool name without the `mcp__<serverName>__` prefix. */
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
+export type ToolsResult = { ok: true; value: McpToolSummary[] } | { ok: false; error: string }
+
 /** The host context this manager needs: the tool registry's schema view. */
-type ManagerContext = Context & { tools: { schemas(): { name: string }[] } }
+type ManagerContext = Context & { tools: { schemas(): RegisteredToolSchema[] } }
 
 type StringListResult = { ok: true; value: string[] } | { ok: false; error: string }
 
@@ -187,6 +204,7 @@ export interface McpManager {
   list(): McpServerRecord[]
   upsert(input: unknown): UpsertResult
   remove(serverName: string): UpsertResult
+  listTools(serverName: string): ToolsResult
   dispose(): void
 }
 
@@ -348,6 +366,22 @@ export function createMcpManager(ctx: ManagerContext): McpManager {
       }
       reconcile()
       return { ok: true, servers: this.list() }
+    },
+    listTools(serverName: string): ToolsResult {
+      const entry = live.get(serverName)
+      if (entry === undefined) return { ok: false, error: `no server named "${serverName}"` }
+      const prefix = `mcp__${serverName}__`
+      const value: McpToolSummary[] = []
+      for (const schema of ctx.tools.schemas()) {
+        if (!schema.name.startsWith(prefix)) continue
+        value.push({
+          name: schema.name.slice(prefix.length),
+          description: schema.description,
+          parameters: schema.parameters,
+        })
+      }
+      value.sort((a, b) => a.name.localeCompare(b.name))
+      return { ok: true, value }
     },
     dispose(): void {
       for (const name of [...live.keys()]) unmount(name)

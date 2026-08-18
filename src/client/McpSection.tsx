@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import {
-  deleteMcpServer, listMcpServers, upsertMcpServer,
+  deleteMcpServer, listMcpServerTools, listMcpServers, upsertMcpServer,
 } from './http'
-import type { McpServerRecord } from './http'
+import type { McpServerRecord, McpToolRecord } from './http'
 
 type T = (key: string) => string
 
@@ -170,6 +170,68 @@ function McpEditor({ t, initial, onSaved, onCancel }: EditorProps) {
   )
 }
 
+/** Render a tool's JSON-schema parameters as a compact `name, other*` line (`*` = required). */
+function toolParams(parameters: Record<string, unknown>): string | undefined {
+  const props = (parameters as { properties?: Record<string, unknown> }).properties
+  if (props === undefined) return undefined
+  const names = Object.keys(props)
+  if (names.length === 0) return undefined
+  const requiredRaw = (parameters as { required?: unknown }).required
+  const required = new Set(
+    Array.isArray(requiredRaw) ? requiredRaw.filter((item): item is string => typeof item === 'string') : [],
+  )
+  return names.map((name) => (required.has(name) ? `${name}*` : name)).join(', ')
+}
+
+/** The tool list of one server: fetched on open, rendered as name/description/params rows. */
+function McpToolList({ t, server, onClose }: { t: T; server: McpServerRecord; onClose: () => void }): ReactNode {
+  const [tools, setTools] = useState<McpToolRecord[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    listMcpServerTools(server.serverName)
+      .then((data) => {
+        if (!cancelled) setTools(data.tools)
+      })
+      .catch((e) => {
+        if (!cancelled) setError(String(e))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [server.serverName])
+
+  return (
+    <div style={s.editor}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{server.serverName}</div>
+        <button style={s.button} onClick={onClose}>{t('close')}</button>
+      </div>
+      {error !== null ? (
+        <div style={s.error}>{error}</div>
+      ) : tools === null ? (
+        <div style={s.empty}>…</div>
+      ) : tools.length === 0 ? (
+        <div style={s.empty}>{t('noTools')}</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {tools.map((tool) => {
+            const params = toolParams(tool.parameters)
+            return (
+              <div key={tool.name} style={{ padding: '8px 0', borderBottom: '1px solid rgba(128,128,128,0.25)' }}>
+                <div style={{ fontWeight: 600, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13 }}>{tool.name}</div>
+                {tool.description !== '' && <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>{tool.description}</div>}
+                {params !== undefined && <div style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{t('params')}: {params}</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function statusLabel(t: T, status: McpServerRecord['status']): string {
   switch (status) {
     case 'connected': return t('connected')
@@ -183,6 +245,7 @@ export function McpSection({ t }: { t: T }): ReactNode {
   const [servers, setServers] = useState<McpServerRecord[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<McpServerRecord | 'new' | null>(null)
+  const [viewingTools, setViewingTools] = useState<McpServerRecord | null>(null)
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -223,6 +286,9 @@ export function McpSection({ t }: { t: T }): ReactNode {
           onCancel={() => setEditing(null)}
         />
       )}
+      {viewingTools !== null && (
+        <McpToolList t={t} server={viewingTools} onClose={() => setViewingTools(null)} />
+      )}
       {servers === null ? (
         <div style={s.empty}>…</div>
       ) : servers.length === 0 ? (
@@ -238,6 +304,7 @@ export function McpSection({ t }: { t: T }): ReactNode {
               {statusLabel(t, server.status)}
               {server.toolCount > 0 ? ` · ${server.toolCount}${t('toolsCount')}` : ''}
             </span>
+            <button style={s.button} onClick={() => setViewingTools(server)}>{t('viewTools')}</button>
             <button style={s.button} onClick={() => setEditing(server)}>{t('edit')}</button>
             <button style={{ ...s.button, ...s.buttonDanger }} onClick={() => void remove(server.serverName)}>{t('delete')}</button>
           </div>
