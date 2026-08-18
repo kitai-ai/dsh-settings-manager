@@ -112,8 +112,7 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 			},
 			hint: {
 				fontSize: 12,
-				opacity: .7,
-				marginTop: -4
+				opacity: .7
 			},
 			error: {
 				color: "#f85149",
@@ -572,8 +571,7 @@ window.__ModuleLoader__.load({ id: "dsh-settings-manager", factory: (require) =>
 			},
 			hint: {
 				fontSize: 12,
-				opacity: .7,
-				marginTop: -4
+				opacity: .7
 			},
 			error: {
 				color: "#f85149",

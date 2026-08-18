@@ -16,7 +16,7 @@ const s: Record<string, CSSProperties> = {
   row: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid rgba(128,128,128,0.25)' },
   name: { fontWeight: 600, minWidth: '150px' },
   desc: { color: 'inherit', opacity: 0.75, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 },
-  hint: { fontSize: 12, opacity: 0.7, marginTop: -4 },
+  hint: { fontSize: 12, opacity: 0.7 },
   error: { color: '#f85149', fontSize: 13 },
   ok: { color: '#3fb950', fontSize: 13 },
   button: { padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(128,128,128,0.4)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 13 },

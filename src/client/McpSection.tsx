@@ -24,7 +24,7 @@ const s: Record<string, CSSProperties> = {
   badge: { fontSize: 11, padding: '2px 8px', borderRadius: '999px', border: '1px solid rgba(128,128,128,0.4)' },
   chip: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: 12, whiteSpace: 'nowrap' },
   dot: { width: 8, height: 8, borderRadius: '50%' },
-  hint: { fontSize: 12, opacity: 0.7, marginTop: -4 },
+  hint: { fontSize: 12, opacity: 0.7 },
   error: { color: '#f85149', fontSize: 13 },
   button: { padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(128,128,128,0.4)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 13 },
   buttonPrimary: { background: 'rgba(80,140,255,0.18)', borderColor: 'rgba(80,140,255,0.55)' },
